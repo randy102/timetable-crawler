@@ -57,8 +57,7 @@ class Crawler {
             await page.focus('#ctl00_ContentPlaceHolder1_ctl00_txtloc')
             await page.keyboard.type(subject)
             await page.click('#ctl00_ContentPlaceHolder1_ctl00_bntLocTKB')
-
-            await page.waitForNavigation({ waitUntil: 'networkidle2' })
+            await page.waitForTimeout(2000)
 
             const [subjectData, subjectTeacherCodes] = await page.evaluate(subjectParser)
             console.log("Subject data: ", JSON.stringify(subjectData))
