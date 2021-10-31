@@ -35,7 +35,7 @@ class Crawler {
             await page.focus('#ctl00_ContentPlaceHolder1_ctl00_txtloc')
             await page.keyboard.type(subject)
             await page.click('#ctl00_ContentPlaceHolder1_ctl00_bntLocTKB')
-            await page.waitForTimeout(1000)
+            await page.waitForTimeout(2000)
 
             const subjectData = await page.evaluate(subjectParser)
 
