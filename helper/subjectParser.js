@@ -11,7 +11,7 @@ function subjectParser() {
     const rows = Array.from(document.querySelectorAll("#ctl00_ContentPlaceHolder1_ctl00_pnlPage div.grid-roll2 > table > tbody > tr"));
 
     if (rows.length === 0) {
-        return null
+        return [null]
     }
     let subjectId = rows[0].querySelector("td:nth-child(1)").innerText;
     let subjectName = rows[0].querySelector("td:nth-child(2)").innerText;

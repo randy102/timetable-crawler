@@ -12,6 +12,8 @@ class Crawler {
     }
 
     async pull(searchTerms = []) {
+        console.log("Seach terms: ", searchTerms)
+
         const browser = await puppeteer.launch({
             'args': [
                 '--no-sandbox',
@@ -20,8 +22,11 @@ class Crawler {
         });
 
         let {teacherCodes,invalidSubjects,parsedSubjects} = await this.getSubjectData(searchTerms, browser)
+        console.log("Invalid: ", invalidSubjects)
+        console.log("Teacher codes: ", teacherCodes)
 
         const teacherName = await this.getTeacherNames(teacherCodes, browser)
+        console.log("Teacher names: ", teacherName)
 
         teacherMapper(parsedSubjects, teacherName)
 
@@ -54,6 +59,7 @@ class Crawler {
             await page.waitForTimeout(2000)
 
             const [subjectData, subjectTeacherCodes] = await page.evaluate(subjectParser)
+            console.log("Subject data: ", JSON.stringify(subjectData))
 
             if (!subjectData) {
                 invalidSubjects.push(subject)
