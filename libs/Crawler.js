@@ -84,7 +84,7 @@ class Crawler {
             await page.waitForSelector('#ctl00_ContentPlaceHolder1_ctl00_btnOK')
             await page.click('#ctl00_ContentPlaceHolder1_ctl00_btnOK')
 
-            await page.waitForTimeout(1000)
+            await page.waitForTimeout(2000)
 
             const name = await page.evaluate(() => {
                 return document.getElementById('ctl00_ContentPlaceHolder1_ctl00_lblContentTenSV').innerText
