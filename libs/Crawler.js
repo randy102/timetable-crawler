@@ -2,6 +2,7 @@ const puppeteer = require('puppeteer')
 const subjectParser = require("../helper/subjectParser");
 const mergeSet = require("../helper/mergeSet");
 const teacherMapper = require("../helper/teacherMapper");
+const { lengthPolicy, noSpecialCharacterPolicy } = require("../helper/termPolicies");
 
 const CRAWL_URL = 'http://thongtindaotao.sgu.edu.vn/'
 const TKB_URL = 'http://thongtindaotao.sgu.edu.vn/Default.aspx?page=thoikhoabieu&sta=1'
@@ -14,6 +15,8 @@ class Crawler {
     async pull(searchTerms = []) {
         console.log("Seach terms: ", searchTerms)
 
+        this.validateSearchTerm(searchTerms)
+
         const browser = await puppeteer.launch({
             'args': [
                 '--no-sandbox',
@@ -22,8 +25,7 @@ class Crawler {
             // headless: false
         });
 
-        let {teacherCodes,invalidSubjects,parsedSubjects} = await this.getSubjectData(searchTerms, browser)
-        console.log("Invalid: ", invalidSubjects)
+        let { teacherCodes, parsedSubjects } = await this.getSubjectData(searchTerms, browser)
         console.log("Teacher codes: ", teacherCodes)
 
         const teacherName = await this.getTeacherNames(teacherCodes, browser)
@@ -33,10 +35,19 @@ class Crawler {
 
         await browser.close()
 
-        return [parsedSubjects, invalidSubjects]
+        return parsedSubjects
     }
 
-    async getSubjectData(searchTerms, browser){
+    validateSearchTerm(terms) {
+        for (let term of terms) {
+            const isValid = lengthPolicy(term) && noSpecialCharacterPolicy(term)
+            if(!isValid){
+                throw new Error("Invalid subject: " + term)
+            }
+        }
+    }
+
+    async getSubjectData(searchTerms, browser) {
         const page = await browser.newPage();
         await page.goto(CRAWL_URL);
         await page.click('#ctl00_menu_lblThoiKhoaBieu')
@@ -63,19 +74,19 @@ class Crawler {
             console.log("Subject data: ", JSON.stringify(subjectData))
 
             if (!subjectData) {
-                invalidSubjects.push(subject)
+                throw new Error("Invalid subject: " + subject)
             } else {
                 parsedSubjects.push(subjectData)
                 teacherCodes = mergeSet(teacherCodes, subjectTeacherCodes)
             }
         }
 
-        return {parsedSubjects, invalidSubjects, teacherCodes}
+        return { parsedSubjects, teacherCodes }
     }
 
-    async getTeacherNames(codes = {}, browser){
+    async getTeacherNames(codes = {}, browser) {
         const page = await browser.newPage();
-        for (let code of Object.keys(codes)){
+        for (let code of Object.keys(codes)) {
             await page.goto(`${TKB_URL}&id=${code}`);
             codes[code] = await page.evaluate(() => {
                 const teacherName = document.getElementById('ctl00_ContentPlaceHolder1_ctl00_lblContentTenSV')
