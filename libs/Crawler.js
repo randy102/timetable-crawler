@@ -24,18 +24,20 @@ class Crawler {
             ],
             // headless: false
         });
+        try {
+            let { teacherCodes, parsedSubjects } = await this.getSubjectData(searchTerms, browser)
+            console.log("Teacher codes: ", teacherCodes)
 
-        let { teacherCodes, parsedSubjects } = await this.getSubjectData(searchTerms, browser)
-        console.log("Teacher codes: ", teacherCodes)
+            const teacherName = await this.getTeacherNames(teacherCodes, browser)
+            console.log("Teacher names: ", teacherName)
 
-        const teacherName = await this.getTeacherNames(teacherCodes, browser)
-        console.log("Teacher names: ", teacherName)
-
-        teacherMapper(parsedSubjects, teacherName)
-
-        await browser.close()
-
-        return parsedSubjects
+            teacherMapper(parsedSubjects, teacherName)
+            return parsedSubjects
+        } catch (e){
+            throw e
+        } finally {
+            await browser.close()
+        }
     }
 
     validateSearchTerm(terms) {
