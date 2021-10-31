@@ -10,7 +10,12 @@ class Crawler {
     }
 
     async pull(searchTerms = []) {
-        const browser = await puppeteer.launch();
+        const browser = await puppeteer.launch({
+            'args': [
+                '--no-sandbox',
+                '--disable-setuid-sandbox'
+            ]
+        });
         const page = await browser.newPage();
         await page.goto(CRAWL_URL);
         await page.click('#ctl00_menu_lblThoiKhoaBieu')
@@ -21,7 +26,7 @@ class Crawler {
         let parsedSubjects = []
         let invalidSubjects = []
 
-        for(const subject of searchTerms){
+        for (const subject of searchTerms) {
             await page.waitForSelector('#ctl00_ContentPlaceHolder1_ctl00_txtloc')
             await page.evaluate(() => {
                 const searchInput = document.getElementById('ctl00_ContentPlaceHolder1_ctl00_txtloc');
@@ -34,7 +39,7 @@ class Crawler {
 
             const subjectData = await page.evaluate(subjectParser)
 
-            if (!subjectData){
+            if (!subjectData) {
                 invalidSubjects.push(subject)
             } else {
                 parsedSubjects.push(subjectData)
