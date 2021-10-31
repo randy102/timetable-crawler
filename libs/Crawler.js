@@ -1,10 +1,10 @@
 const puppeteer = require('puppeteer')
-const util = require('util')
 const subjectParser = require("../helper/subjectParser");
 const mergeSet = require("../helper/mergeSet");
 const teacherMapper = require("../helper/teacherMapper");
 
 const CRAWL_URL = 'http://thongtindaotao.sgu.edu.vn/'
+const TKB_URL = 'http://thongtindaotao.sgu.edu.vn/Default.aspx?page=thoikhoabieu&sta=1'
 
 class Crawler {
     constructor() {
@@ -18,7 +18,8 @@ class Crawler {
             'args': [
                 '--no-sandbox',
                 '--disable-setuid-sandbox'
-            ]
+            ],
+            // headless: false
         });
 
         let {teacherCodes,invalidSubjects,parsedSubjects} = await this.getSubjectData(searchTerms, browser)
@@ -56,7 +57,8 @@ class Crawler {
             await page.focus('#ctl00_ContentPlaceHolder1_ctl00_txtloc')
             await page.keyboard.type(subject)
             await page.click('#ctl00_ContentPlaceHolder1_ctl00_bntLocTKB')
-            await page.waitForTimeout(2000)
+
+            await page.waitForNavigation({ waitUntil: 'networkidle2' })
 
             const [subjectData, subjectTeacherCodes] = await page.evaluate(subjectParser)
             console.log("Subject data: ", JSON.stringify(subjectData))
@@ -74,24 +76,8 @@ class Crawler {
 
     async getTeacherNames(codes = {}, browser){
         const page = await browser.newPage();
-        await page.goto(CRAWL_URL);
-
         for (let code of Object.keys(codes)){
-            await page.waitForSelector('#ctl00_menu_lblThoiKhoaBieu')
-            await page.click('#ctl00_menu_lblThoiKhoaBieu')
-
-            await page.waitForSelector('#ctl00_ContentPlaceHolder1_ctl00_radioMaSV')
-            await page.click('#ctl00_ContentPlaceHolder1_ctl00_radioMaSV')
-
-            await page.waitForSelector('#ctl00_ContentPlaceHolder1_ctl00_txtMaSV')
-            await page.focus('#ctl00_ContentPlaceHolder1_ctl00_txtMaSV')
-            await page.keyboard.type(code)
-
-            await page.waitForSelector('#ctl00_ContentPlaceHolder1_ctl00_btnOK')
-            await page.click('#ctl00_ContentPlaceHolder1_ctl00_btnOK')
-
-            await page.waitForTimeout(2000)
-
+            await page.goto(`${TKB_URL}&id=${code}`);
             codes[code] = await page.evaluate(() => {
                 const teacherName = document.getElementById('ctl00_ContentPlaceHolder1_ctl00_lblContentTenSV')
                 return teacherName ? teacherName.innerText : ''
@@ -99,8 +85,6 @@ class Crawler {
         }
         return codes
     }
-
-
 }
 
 module.exports = Crawler
