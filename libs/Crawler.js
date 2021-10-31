@@ -10,7 +10,7 @@ class Crawler {
     }
 
     async pull(searchTerms = []) {
-        const browser = await puppeteer.launch({ headless: false });
+        const browser = await puppeteer.launch();
         const page = await browser.newPage();
         await page.goto(CRAWL_URL);
         await page.click('#ctl00_menu_lblThoiKhoaBieu')
