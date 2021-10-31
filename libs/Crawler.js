@@ -86,13 +86,10 @@ class Crawler {
 
             await page.waitForTimeout(2000)
 
-            const name = await page.evaluate(() => {
-                return document.getElementById('ctl00_ContentPlaceHolder1_ctl00_lblContentTenSV').innerText
+            codes[code] = await page.evaluate(() => {
+                const teacherName = document.getElementById('ctl00_ContentPlaceHolder1_ctl00_lblContentTenSV')
+                return teacherName ? teacherName.innerText : ''
             })
-
-            if (name){
-                codes[code] = name
-            }
         }
         return codes
     }
