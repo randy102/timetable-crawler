@@ -3,21 +3,21 @@ const Crawler = require("./libs/Crawler");
 const app = express()
 const port = process.env.PORT || 3000
 
-app.get('/', async (req, res) => {
+app.get('/api/subjects', async (req, res) => {
     const crawler = new Crawler()
-    const SUBJECTS = ['862408','810088']
+    const query = req.query['s']
+    const terms = query ? req.query['s'].split(',') : []
+    if (terms.length === 0) {
+        return res.json({ error: 'Must give at least 1 term to process!', data: null })
+    }
     try {
-        const [subjects, invalid] = await crawler.pull(SUBJECTS)
-        res.json({  error: null, data: {subjects, invalid}})
-    } catch (e){
-        console.log("error: ", e.message)
-        res.json({
-            error: e.message,
-            data: "Please try again later."
-        })
+        const [subjects, invalid] = await crawler.pull(terms)
+        return res.json({ error: null, data: { subjects, invalid } })
+    } catch (e) {
+        return res.json({ error: e.message, data: null })
     }
 })
 
 app.listen(port, () => {
-    console.log(`Example app listening at http://localhost:${port}`)
+    console.log(`Listening at http://localhost:${port}`)
 })
