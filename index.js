@@ -11,7 +11,9 @@ app.get('/api/subjects', async (req, res) => {
         return res.json({ error: 'Must give at least 1 term to process!', data: null })
     }
     try {
+        console.time('pull')
         const subjects = await crawler.pull(terms)
+        console.timeEnd('pull')
         return res.json({ error: null, data: { subjects } })
     } catch (e) {
         return res.json({ error: e.message, data: null })

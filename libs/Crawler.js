@@ -3,6 +3,7 @@ const subjectParser = require("../helper/subjectParser");
 const mergeSet = require("../helper/mergeSet");
 const teacherMapper = require("../helper/teacherMapper");
 const { lengthPolicy, noSpecialCharacterPolicy } = require("../helper/termPolicies");
+const { subjectCache } = require("../helper/cache");
 
 const CRAWL_URL = 'http://thongtindaotao.sgu.edu.vn/'
 const TKB_URL = 'http://thongtindaotao.sgu.edu.vn/Default.aspx?page=thoikhoabieu&sta=1'
@@ -32,6 +33,9 @@ class Crawler {
             console.log("Teacher names: ", teacherName)
 
             teacherMapper(parsedSubjects, teacherName)
+
+            this.cacheSubjects(parsedSubjects)
+
             return parsedSubjects
         } catch (e){
             throw e
@@ -50,6 +54,9 @@ class Crawler {
     }
 
     async getSubjectData(searchTerms, browser) {
+        let parsedSubjects = []
+        let teacherCodes = {}
+
         const page = await browser.newPage();
         await page.goto(CRAWL_URL);
         await page.click('#ctl00_menu_lblThoiKhoaBieu')
@@ -57,18 +64,22 @@ class Crawler {
         await page.waitForSelector('#ctl00_ContentPlaceHolder1_ctl00_btnOK')
         await page.click('#ctl00_ContentPlaceHolder1_ctl00_btnOK')
 
-        let parsedSubjects = []
-        let invalidSubjects = []
-        let teacherCodes = {}
+        for (const subjectId of searchTerms) {
+            if(subjectCache.has(subjectId)){
+                parsedSubjects.push(subjectCache.get(subjectId))
+                console.log("Cache hit: " + subjectId)
+                continue
+            }
 
-        for (const subject of searchTerms) {
+            console.log("Cache missed: " + subjectId)
+
             await page.waitForSelector('#ctl00_ContentPlaceHolder1_ctl00_txtloc')
             await page.evaluate(() => {
                 const searchInput = document.getElementById('ctl00_ContentPlaceHolder1_ctl00_txtloc');
                 searchInput.value = '';
             });
             await page.focus('#ctl00_ContentPlaceHolder1_ctl00_txtloc')
-            await page.keyboard.type(subject)
+            await page.keyboard.type(subjectId)
             await page.click('#ctl00_ContentPlaceHolder1_ctl00_bntLocTKB')
             await page.waitForTimeout(2000)
 
@@ -76,7 +87,7 @@ class Crawler {
             console.log("Subject data: ", JSON.stringify(subjectData))
 
             if (!subjectData) {
-                throw new Error("Invalid subject: " + subject)
+                throw new Error("Invalid subject: " + subjectId)
             } else {
                 parsedSubjects.push(subjectData)
                 teacherCodes = mergeSet(teacherCodes, subjectTeacherCodes)
@@ -84,6 +95,15 @@ class Crawler {
         }
 
         return { parsedSubjects, teacherCodes }
+    }
+
+    cacheSubjects(subjects){
+        for (let subject of subjects){
+            if (!subjectCache.has(subject['subjectId'])){
+                subjectCache.set(subject['subjectId'], subject)
+                console.log("Cache stored: ", subject['subjectId'])
+            }
+        }
     }
 
     async getTeacherNames(codes = {}, browser) {
