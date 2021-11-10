@@ -1,4 +1,9 @@
-function subjectParser() {
+const cheerio = require("cheerio");
+const HTMLParser = require('node-html-parser');
+
+function subjectParser(html) {
+    const document = HTMLParser.parse(html)
+
     const dayMap = {
         "Hai": 2,
         "Ba": 3,
@@ -8,7 +13,7 @@ function subjectParser() {
         "Bảy": 7,
     };
 
-    const rows = Array.from(document.querySelectorAll("#ctl00_ContentPlaceHolder1_ctl00_pnlPage div.grid-roll2 > table > tbody > tr"));
+    const rows = Array.from(document.querySelectorAll("#ctl00_ContentPlaceHolder1_ctl00_pnlPage div.grid-roll2>table>tr"));
 
     if (rows.length === 0) {
         return [null]

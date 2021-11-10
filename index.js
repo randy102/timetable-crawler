@@ -16,6 +16,7 @@ app.get('/api/subjects', async (req, res) => {
         console.timeEnd('pull')
         return res.json({ error: null, data: { subjects } })
     } catch (e) {
+        console.timeEnd('pull')
         return res.json({ error: e.message, data: null })
     }
 })

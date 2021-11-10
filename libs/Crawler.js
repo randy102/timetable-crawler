@@ -4,9 +4,11 @@ const mergeSet = require("../helper/mergeSet");
 const teacherMapper = require("../helper/teacherMapper");
 const { lengthPolicy, noSpecialCharacterPolicy } = require("../helper/termPolicies");
 const { subjectCache } = require("../helper/cache");
+const axios = require('axios').default;
+const cheerio = require('cheerio');
+const FormData = require('form-data');
 
-const CRAWL_URL = 'http://thongtindaotao.sgu.edu.vn/'
-const TKB_URL = 'http://thongtindaotao.sgu.edu.vn/Default.aspx?page=thoikhoabieu&sta=1'
+const TKB_URL = 'http://thongtindaotao.sgu.edu.vn/Default.aspx?page=thoikhoabieu&load=all&sta=1'
 
 class Crawler {
     constructor() {
@@ -26,7 +28,8 @@ class Crawler {
             // headless: false
         });
         try {
-            let { teacherCodes, parsedSubjects } = await this.getSubjectData(searchTerms, browser)
+            // let { teacherCodes, parsedSubjects } = await this.getSubjectData(searchTerms, browser)
+            let { teacherCodes, parsedSubjects } = await this.getSubjectData(searchTerms)
             console.log("Teacher codes: ", teacherCodes)
 
             const teacherName = await this.getTeacherNames(teacherCodes, browser)
@@ -37,7 +40,7 @@ class Crawler {
             this.cacheSubjects(parsedSubjects)
 
             return parsedSubjects
-        } catch (e){
+        } catch (e) {
             throw e
         } finally {
             await browser.close()
@@ -47,43 +50,57 @@ class Crawler {
     validateSearchTerm(terms) {
         for (let term of terms) {
             const isValid = lengthPolicy(term) && noSpecialCharacterPolicy(term)
-            if(!isValid){
+            if (!isValid) {
                 throw new Error("Invalid subject: " + term)
             }
         }
     }
 
-    async getSubjectData(searchTerms, browser) {
+    async getSubjectData(searchTerms) {
+        let __VIEWSTATEGENERATOR
+        let __VIEWSTATE
+        let cookies
         let parsedSubjects = []
         let teacherCodes = {}
 
-        const page = await browser.newPage();
-        await page.goto(CRAWL_URL);
-        await page.click('#ctl00_menu_lblThoiKhoaBieu')
-
-        await page.waitForSelector('#ctl00_ContentPlaceHolder1_ctl00_btnOK')
-        await page.click('#ctl00_ContentPlaceHolder1_ctl00_btnOK')
-
         for (const subjectId of searchTerms) {
-            if(subjectCache.has(subjectId)){
+            if (subjectCache.has(subjectId)) {
                 parsedSubjects.push(subjectCache.get(subjectId))
                 console.log("Cache hit: " + subjectId)
                 continue
             }
-
             console.log("Cache missed: " + subjectId)
 
-            await page.waitForSelector('#ctl00_ContentPlaceHolder1_ctl00_txtloc')
-            await page.evaluate(() => {
-                const searchInput = document.getElementById('ctl00_ContentPlaceHolder1_ctl00_txtloc');
-                searchInput.value = '';
-            });
-            await page.focus('#ctl00_ContentPlaceHolder1_ctl00_txtloc')
-            await page.keyboard.type(subjectId)
-            await page.click('#ctl00_ContentPlaceHolder1_ctl00_bntLocTKB')
-            await page.waitForTimeout(2000)
+            if (!__VIEWSTATEGENERATOR || !__VIEWSTATE){
+                const initResponse = await axios.get(TKB_URL)
+                const $ = cheerio.load(initResponse.data)
+                __VIEWSTATEGENERATOR = $('#__VIEWSTATEGENERATOR').val()
+                __VIEWSTATE = $('#__VIEWSTATE').val()
+                cookies = initResponse.headers["set-cookie"][0].split(";")[0]
+            }
 
-            const [subjectData, subjectTeacherCodes] = await page.evaluate(subjectParser)
+            const form = new FormData()
+            form.append("__VIEWSTATEGENERATOR", __VIEWSTATEGENERATOR)
+            form.append("__VIEWSTATE", __VIEWSTATE)
+            form.append("ctl00$ContentPlaceHolder1$ctl00$ddlChonNHHK", "20211")
+            form.append("__EVENTTARGET", "")
+            form.append("__EVENTARGUMENT", "")
+            form.append("__LASTFOCUS", "")
+            form.append("ctl00$ContentPlaceHolder1$ctl00$ddlChon", "mh")
+            form.append("ctl00$ContentPlaceHolder1$ctl00$txtloc", subjectId)
+            form.append("ctl00$ContentPlaceHolder1$ctl00$ddlTuanorHk", "itemHK")
+            form.append("ctl00$ContentPlaceHolder1$ctl00$bntLocTKB", "Lọc")
+            form.append("ctl00$ContentPlaceHolder1$ctl00$rad_MonHoc", "rad_MonHoc")
+
+            const postHeaders = {
+                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36",
+                "Cookie": cookies,
+                ...form.getHeaders()
+            }
+
+            const response = await axios.post(TKB_URL, form, { headers: postHeaders })
+            const [subjectData, subjectTeacherCodes] = subjectParser(response.data)
+
             console.log("Subject data: ", JSON.stringify(subjectData))
 
             if (!subjectData) {
@@ -97,9 +114,9 @@ class Crawler {
         return { parsedSubjects, teacherCodes }
     }
 
-    cacheSubjects(subjects){
-        for (let subject of subjects){
-            if (!subjectCache.has(subject['subjectId'])){
+    cacheSubjects(subjects) {
+        for (let subject of subjects) {
+            if (!subjectCache.has(subject['subjectId'])) {
                 subjectCache.set(subject['subjectId'], subject)
                 console.log("Cache stored: ", subject['subjectId'])
             }
