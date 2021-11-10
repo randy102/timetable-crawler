@@ -1,4 +1,3 @@
-const cheerio = require("cheerio");
 const HTMLParser = require('node-html-parser');
 
 function subjectParser(html) {

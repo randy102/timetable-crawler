@@ -1,12 +1,11 @@
-const puppeteer = require('puppeteer')
 const subjectParser = require("../helper/subjectParser");
 const mergeSet = require("../helper/mergeSet");
 const teacherMapper = require("../helper/teacherMapper");
 const { lengthPolicy, noSpecialCharacterPolicy } = require("../helper/termPolicies");
 const { subjectCache } = require("../helper/cache");
 const axios = require('axios').default;
-const cheerio = require('cheerio');
 const FormData = require('form-data');
+const HTMLParser = require("node-html-parser");
 
 const TKB_URL = 'http://thongtindaotao.sgu.edu.vn/Default.aspx?page=thoikhoabieu&load=all&sta=1'
 
@@ -16,35 +15,26 @@ class Crawler {
     }
 
     async pull(searchTerms = []) {
+        if (searchTerms.length === 0) {
+            throw new Error('Must give at least 1 term to process!')
+        }
+
         console.log("Seach terms: ", searchTerms)
 
         this.validateSearchTerm(searchTerms)
 
-        const browser = await puppeteer.launch({
-            'args': [
-                '--no-sandbox',
-                '--disable-setuid-sandbox'
-            ],
-            // headless: false
-        });
-        try {
-            // let { teacherCodes, parsedSubjects } = await this.getSubjectData(searchTerms, browser)
-            let { teacherCodes, parsedSubjects } = await this.getSubjectData(searchTerms)
-            console.log("Teacher codes: ", teacherCodes)
+        let { teacherCodes, parsedSubjects } = await this.getSubjectData(searchTerms)
+        console.log("Teacher codes: ", teacherCodes)
 
-            const teacherName = await this.getTeacherNames(teacherCodes, browser)
-            console.log("Teacher names: ", teacherName)
+        const teacherName = await this.getTeacherNames(teacherCodes)
+        console.log("Teacher names: ", teacherName)
 
-            teacherMapper(parsedSubjects, teacherName)
+        teacherMapper(parsedSubjects, teacherName)
 
-            this.cacheSubjects(parsedSubjects)
+        this.cacheSubjects(parsedSubjects)
 
-            return parsedSubjects
-        } catch (e) {
-            throw e
-        } finally {
-            await browser.close()
-        }
+        return parsedSubjects
+
     }
 
     validateSearchTerm(terms) {
@@ -71,11 +61,11 @@ class Crawler {
             }
             console.log("Cache missed: " + subjectId)
 
-            if (!__VIEWSTATEGENERATOR || !__VIEWSTATE){
+            if (!__VIEWSTATEGENERATOR || !__VIEWSTATE) {
                 const initResponse = await axios.get(TKB_URL)
-                const $ = cheerio.load(initResponse.data)
-                __VIEWSTATEGENERATOR = $('#__VIEWSTATEGENERATOR').val()
-                __VIEWSTATE = $('#__VIEWSTATE').val()
+                const document = HTMLParser.parse(initResponse.data)
+                __VIEWSTATEGENERATOR = document.querySelector('#__VIEWSTATEGENERATOR').getAttribute("value")
+                __VIEWSTATE = document.querySelector('#__VIEWSTATE').getAttribute("value")
                 cookies = initResponse.headers["set-cookie"][0].split(";")[0]
             }
 
@@ -123,14 +113,12 @@ class Crawler {
         }
     }
 
-    async getTeacherNames(codes = {}, browser) {
-        const page = await browser.newPage();
+    async getTeacherNames(codes = {}) {
         for (let code of Object.keys(codes)) {
-            await page.goto(`${TKB_URL}&id=${code}`);
-            codes[code] = await page.evaluate(() => {
-                const teacherName = document.getElementById('ctl00_ContentPlaceHolder1_ctl00_lblContentTenSV')
-                return teacherName ? teacherName.innerText : ''
-            })
+            const response = await axios.get(`${TKB_URL}&id=${code}`)
+            const document = HTMLParser.parse(response.data)
+            const teacherName = document.querySelector('#ctl00_ContentPlaceHolder1_ctl00_lblContentTenSV')
+            codes[code] = teacherName ? teacherName.innerText : ''
         }
         return codes
     }
