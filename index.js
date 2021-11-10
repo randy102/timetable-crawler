@@ -7,7 +7,7 @@ const port = process.env.PORT || 3000
 app.get('/api/subjects', async (req, res) => {
     const crawler = new Crawler()
     const query = req.query['s']
-    const terms = query ? req.query['s'].split(',') : []
+    const terms = query ? query.split(',') : []
 
     try {
         console.time('========= [Total]: ')
@@ -20,7 +20,7 @@ app.get('/api/subjects', async (req, res) => {
     }
 })
 
-app.get('/api/cache/teachers', (req, res) =>{
+app.get('/api/cache/teachers', (req, res) => {
     res.json(teacherCache.data)
 })
 
@@ -29,10 +29,18 @@ app.get('/api/cache/subjects', (req, res) => {
 })
 
 app.get('/api/cache/flush/subject', (req, res) => {
-    subjectCache.flushAll()
-    res.send('OK')
+    const password = req.query['password']
+    if (password === process.env.CACHE_FLUSH_PASSWORD) {
+
+        subjectCache.flushAll()
+        res.send('OK')
+    } else {
+        res.send('Password is wrong!')
+    }
 })
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
     console.log(`Listening at http://localhost:${port}`)
 })
+
+server.timeout = 100000
