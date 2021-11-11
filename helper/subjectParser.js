@@ -28,15 +28,12 @@ function subjectParser(html) {
         classes: [],
     };
 
-    let teacherCodes = {}
-
     for (let row of rows) {
         let group = row.querySelector("td:nth-child(3)").innerText;
         let days = Array.from(row.querySelectorAll('td:nth-child(9) td, td:nth-child(9)>div')).map(x => dayMap[x.innerText]);
         let starts = Array.from(row.querySelectorAll('td:nth-child(10) td,td:nth-child(10)>div')).map(x => +x.innerText);
         let lengths = Array.from(row.querySelectorAll('td:nth-child(11) td, td:nth-child(11)>div')).map(x => +x.innerText);
         let rooms = Array.from(row.querySelectorAll('td:nth-child(12) td, td:nth-child(12)>div')).map(x => x.innerText);
-        let teachers = Array.from(row.querySelectorAll('td:nth-child(13) td, td:nth-child(13)>div')).map(x => x.innerText);
 
         let sessions = [];
 
@@ -46,10 +43,7 @@ function subjectParser(html) {
                 start: starts[index],
                 length: lengths[index],
                 room: rooms[index],
-                teacher: teachers[index]
             })
-
-            teacherCodes[teachers[index]] = ''
         })
 
         result.classes.push({
@@ -58,7 +52,7 @@ function subjectParser(html) {
         });
     }
 
-    return [result, teacherCodes];
+    return result;
 }
 
 module.exports = subjectParser

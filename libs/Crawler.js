@@ -1,6 +1,4 @@
 const subjectParser = require("../helper/subjectParser");
-const mergeSet = require("../helper/mergeSet");
-const teacherMapper = require("../helper/teacherMapper");
 const { lengthPolicy, noSpecialCharacterPolicy } = require("../helper/termPolicies");
 const { subjectCache, teacherCache } = require("../helper/cache");
 const axios = require('axios').default;
@@ -23,13 +21,7 @@ class Crawler {
 
         this.validateSearchTerm(searchTerms)
 
-        let { teacherCodes, parsedSubjects } = await this.getSubjectData(searchTerms)
-        console.log("Teacher codes: ", teacherCodes)
-
-        const teacherName = await this.getTeacherNames(teacherCodes)
-        console.log("Teacher names: ", teacherName)
-
-        teacherMapper(parsedSubjects, teacherName)
+        let parsedSubjects = await this.getSubjectData(searchTerms)
 
         this.cacheSubjects(parsedSubjects)
 
@@ -51,7 +43,6 @@ class Crawler {
         let viewState
         let cookies
         let parsedSubjects = []
-        let teacherCodes = {}
 
         for (const subjectId of searchTerms) {
             if (subjectCache.has(subjectId)) {
@@ -74,7 +65,7 @@ class Crawler {
             console.timeEnd(`========= [Subject Request ${subjectId}]: `)
 
             console.time(`========= [Subject Parse ${subjectId}]: `)
-            const [subjectData, subjectTeacherCodes] = subjectParser(response.data)
+            const subjectData = subjectParser(response.data)
             console.timeEnd(`========= [Subject Parse ${subjectId}]: `)
 
             console.log("Subject data: ", JSON.stringify(subjectData))
@@ -83,11 +74,10 @@ class Crawler {
                 throw new Error("Invalid subject: " + subjectId)
             } else {
                 parsedSubjects.push(subjectData)
-                teacherCodes = mergeSet(teacherCodes, subjectTeacherCodes)
             }
         }
 
-        return { parsedSubjects, teacherCodes }
+        return parsedSubjects
     }
 
     cacheSubjects(subjects) {
@@ -97,24 +87,6 @@ class Crawler {
                 console.log("Cache stored: ", subject['subjectId'])
             }
         }
-    }
-
-    async getTeacherNames(codes = {}) {
-        for (let code of Object.keys(codes)) {
-            if (teacherCache.has(code)) {
-                codes[code] = teacherCache.get(code)
-                continue
-            }
-            console.time(`========= [Teacher Request ${code}]: `)
-            const response = await axios.get(`${TKB_URL}&id=${code}`)
-            console.timeEnd(`========= [Teacher Request ${code}]: `)
-
-            const document = HTMLParser.parse(response.data)
-            const teacherName = document.querySelector('#ctl00_ContentPlaceHolder1_ctl00_lblContentTenSV')
-            codes[code] = teacherName ? teacherName.innerText : ''
-            teacherCache.set(code, codes[code])
-        }
-        return codes
     }
 }
 
