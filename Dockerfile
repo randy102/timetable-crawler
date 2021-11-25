@@ -17,11 +17,9 @@ RUN  apt-get update \
      && wget --quiet https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh -O /usr/sbin/wait-for-it.sh \
      && chmod +x /usr/sbin/wait-for-it.sh
 
-ADD package.json package-lock.json /
+COPY . .
 
 RUN npm install
-
-COPY . .
 
 EXPOSE 3000
 
