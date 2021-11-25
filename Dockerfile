@@ -34,7 +34,7 @@ RUN apt-get install -y \
     libxrender1 \
     libxss1 \
     libxtst6 \
-    xdg-utils \
+    xdg-utils
 
 COPY package*.json ./
 
