@@ -21,8 +21,6 @@ ADD package.json package-lock.json /
 
 RUN npm install
 
-RUN chmod -R o+rwx node_modules/puppeteer/.local-chromium
-
 COPY . .
 
 EXPOSE 3000
