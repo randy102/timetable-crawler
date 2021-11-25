@@ -30,17 +30,15 @@ function subjectParser() {
         let starts = Array.from(row.querySelectorAll('td:nth-child(10) td,td:nth-child(10)>div')).map(x => +x.innerText);
         let lengths = Array.from(row.querySelectorAll('td:nth-child(11) td, td:nth-child(11)>div')).map(x => +x.innerText);
         let rooms = Array.from(row.querySelectorAll('td:nth-child(12) td, td:nth-child(12)>div')).map(x => x.innerText);
+        let weeks = Array.from(row.querySelectorAll('td:nth-child(14) td, td:nth-child(14)>div')).map(x => x.innerText);
 
-        let sessions = [];
-
-        days.forEach((day, index) => {
-            sessions.push({
-                day,
-                start: starts[index],
-                length: lengths[index],
-                room: rooms[index],
-            })
-        })
+        let sessions = days.map((day, index) => ({
+            day,
+            start: starts[index],
+            length: lengths[index],
+            room: rooms[index],
+            week: weeks[index].split("").map(c => c === '-' ? 0 : 1)
+        }));
 
         result.classes.push({
             group,
