@@ -1,12 +1,9 @@
 const puppeteer = require('puppeteer')
 const subjectParser = require("../helper/subjectParser");
-const mergeSet = require("../helper/mergeSet");
-const teacherMapper = require("../helper/teacherMapper");
 const { lengthPolicy, noSpecialCharacterPolicy } = require("../helper/termPolicies");
 const { subjectCache } = require("../helper/cache");
 
-const CRAWL_URL = 'http://thongtindaotao.sgu.edu.vn/'
-const TKB_URL = 'http://thongtindaotao.sgu.edu.vn/Default.aspx?page=thoikhoabieu&sta=1'
+const CRAWL_URL = 'http://thongtindaotao.sgu.edu.vn/Default.aspx?page=thoikhoabieu&load=all&sta=1'
 
 class Crawler {
     constructor() {
@@ -26,16 +23,8 @@ class Crawler {
             // headless: false
         });
         try {
-            let { teacherCodes, parsedSubjects } = await this.getSubjectData(searchTerms, browser)
-            console.log("Teacher codes: ", teacherCodes)
-
-            const teacherName = await this.getTeacherNames(teacherCodes, browser)
-            console.log("Teacher names: ", teacherName)
-
-            teacherMapper(parsedSubjects, teacherName)
-
+            let  parsedSubjects = await this.getSubjectData(searchTerms, browser)
             this.cacheSubjects(parsedSubjects)
-
             return parsedSubjects
         } catch (e){
             throw e
@@ -55,14 +44,9 @@ class Crawler {
 
     async getSubjectData(searchTerms, browser) {
         let parsedSubjects = []
-        let teacherCodes = {}
 
         const page = await browser.newPage();
         await page.goto(CRAWL_URL);
-        await page.click('#ctl00_menu_lblThoiKhoaBieu')
-
-        await page.waitForSelector('#ctl00_ContentPlaceHolder1_ctl00_btnOK')
-        await page.click('#ctl00_ContentPlaceHolder1_ctl00_btnOK')
 
         for (const subjectId of searchTerms) {
             if(subjectCache.has(subjectId)){
@@ -81,20 +65,18 @@ class Crawler {
             await page.focus('#ctl00_ContentPlaceHolder1_ctl00_txtloc')
             await page.keyboard.type(subjectId)
             await page.click('#ctl00_ContentPlaceHolder1_ctl00_bntLocTKB')
-            await page.waitForTimeout(2000)
+            await page.waitForSelector("#ctl00_ContentPlaceHolder1_ctl00_pnlPage div.grid-roll2 > table > tbody > tr")
 
-            const [subjectData, subjectTeacherCodes] = await page.evaluate(subjectParser)
+            const subjectData = await page.evaluate(subjectParser)
             console.log("Subject data: ", JSON.stringify(subjectData))
 
             if (!subjectData) {
                 throw new Error("Invalid subject: " + subjectId)
             } else {
                 parsedSubjects.push(subjectData)
-                teacherCodes = mergeSet(teacherCodes, subjectTeacherCodes)
             }
         }
-
-        return { parsedSubjects, teacherCodes }
+        return parsedSubjects
     }
 
     cacheSubjects(subjects){
@@ -104,18 +86,6 @@ class Crawler {
                 console.log("Cache stored: ", subject['subjectId'])
             }
         }
-    }
-
-    async getTeacherNames(codes = {}, browser) {
-        const page = await browser.newPage();
-        for (let code of Object.keys(codes)) {
-            await page.goto(`${TKB_URL}&id=${code}`);
-            codes[code] = await page.evaluate(() => {
-                const teacherName = document.getElementById('ctl00_ContentPlaceHolder1_ctl00_lblContentTenSV')
-                return teacherName ? teacherName.innerText : ''
-            })
-        }
-        return codes
     }
 }
 
