@@ -7,6 +7,4 @@ services:
       - "3000:3000"
     volumes:
       - .:/usr/src/app
-    command:
-      - npm install
-      - node index.js
+    command: bash -c "npm install && node index.js"
