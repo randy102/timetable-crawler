@@ -17,9 +17,6 @@ RUN  apt-get update \
      && wget --quiet https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh -O /usr/sbin/wait-for-it.sh \
      && chmod +x /usr/sbin/wait-for-it.sh
 
-ADD package-lock.json .
-ADD package.json .
-
 RUN npm install
 
-EXPOSE 3000
+RUN ["node", "index.js"]
