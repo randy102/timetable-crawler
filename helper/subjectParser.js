@@ -25,6 +25,9 @@ function subjectParser() {
     };
 
     for (let row of rows) {
+        let canRegister = row.querySelector("td:nth-child(9)").innerText;
+        if(!canRegister) continue
+
         let group = row.querySelector("td:nth-child(3)").innerText;
         let days = Array.from(row.querySelectorAll('td:nth-child(9) td, td:nth-child(9)>div')).map(x => dayMap[x.innerText]);
         let starts = Array.from(row.querySelectorAll('td:nth-child(10) td,td:nth-child(10)>div')).map(x => +x.innerText);
@@ -37,7 +40,7 @@ function subjectParser() {
             start: starts[index],
             length: lengths[index],
             room: rooms[index],
-            week: weeks[index].split("").map(c => c === '-' ? 0 : 1)
+            week: weeks[index] && weeks[index].split("").map(c => c === '-' ? 0 : 1)
         }));
 
         result.classes.push({
