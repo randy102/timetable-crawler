@@ -1,7 +1,7 @@
-const NodeCache = require( "node-cache" );
-const subjectCache = new NodeCache();
-const teacherCache = new NodeCache()
+const NodeCache = require("node-cache");
+
+const subjectCache = new NodeCache({ stdTTL: 30 * 60 });
+
 module.exports = {
-    subjectCache,
-    teacherCache
+    subjectCache
 }
