@@ -23,10 +23,10 @@ class Crawler {
             // headless: false
         });
         try {
-            let  parsedSubjects = await this.getSubjectData(searchTerms, browser)
+            let parsedSubjects = await this.getSubjectData(searchTerms, browser)
             this.cacheSubjects(parsedSubjects)
             return parsedSubjects
-        } catch (e){
+        } catch (e) {
             throw e
         } finally {
             await browser.close()
@@ -36,7 +36,7 @@ class Crawler {
     validateSearchTerm(terms) {
         for (let term of terms) {
             const isValid = lengthPolicy(term) && noSpecialCharacterPolicy(term)
-            if(!isValid){
+            if (!isValid) {
                 throw new Error("Invalid subject: " + term)
             }
         }
@@ -49,7 +49,7 @@ class Crawler {
         await page.goto(CRAWL_URL);
 
         for (const subjectId of searchTerms) {
-            if(subjectCache.has(subjectId)){
+            if (subjectCache.has(subjectId)) {
                 parsedSubjects.push(subjectCache.get(subjectId))
                 console.log("Cache hit: " + subjectId)
                 continue
@@ -65,7 +65,12 @@ class Crawler {
             await page.focus('#ctl00_ContentPlaceHolder1_ctl00_txtloc')
             await page.keyboard.type(subjectId)
             await page.click('#ctl00_ContentPlaceHolder1_ctl00_bntLocTKB')
-            await page.waitForSelector("#ctl00_ContentPlaceHolder1_ctl00_pnlPage div.grid-roll2 > table > tbody > tr")
+
+            try {
+                await page.waitForSelector("#ctl00_ContentPlaceHolder1_ctl00_pnlPage div.grid-roll2 > table > tbody > tr", { timeout: 10000 })
+            } catch (e){
+                throw new Error("Invalid subject: " + subjectId)
+            }
 
             const subjectData = await page.evaluate(subjectParser)
             console.log("Subject data: ", JSON.stringify(subjectData))
@@ -79,9 +84,9 @@ class Crawler {
         return parsedSubjects
     }
 
-    cacheSubjects(subjects){
-        for (let subject of subjects){
-            if (!subjectCache.has(subject['subjectId'])){
+    cacheSubjects(subjects) {
+        for (let subject of subjects) {
+            if (!subjectCache.has(subject['subjectId'])) {
                 subjectCache.set(subject['subjectId'], subject)
                 console.log("Cache stored: ", subject['subjectId'])
             }
