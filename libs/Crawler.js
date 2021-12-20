@@ -43,10 +43,7 @@ class Crawler {
     }
 
     async getSubjectData(searchTerms, browser) {
-        let parsedSubjects = []
-
-        const page = await browser.newPage();
-        await page.goto(CRAWL_URL);
+        let parsedSubjects = [], page
 
         for (const subjectId of searchTerms) {
             if (subjectCache.has(subjectId)) {
@@ -54,8 +51,12 @@ class Crawler {
                 console.log("Cache hit: " + subjectId)
                 continue
             }
-
             console.log("Cache missed: " + subjectId)
+
+            if(!page){
+                page = await browser.newPage();
+                page.goto(CRAWL_URL);
+            }
 
             await page.waitForSelector('#ctl00_ContentPlaceHolder1_ctl00_txtloc')
             await page.evaluate(() => {
@@ -67,9 +68,9 @@ class Crawler {
             await page.click('#ctl00_ContentPlaceHolder1_ctl00_bntLocTKB')
 
             try {
-                await page.waitForSelector("#ctl00_ContentPlaceHolder1_ctl00_pnlPage div.grid-roll2 > table > tbody > tr", { timeout: 10000 })
+                await page.waitForSelector("#ctl00_ContentPlaceHolder1_ctl00_bntLocTKB", { timeout: 10000 })
             } catch (e){
-                throw new Error("Invalid subject: " + subjectId)
+                throw new Error("Server is busy now, please try again later.")
             }
 
             const subjectData = await page.evaluate(subjectParser)
@@ -77,9 +78,9 @@ class Crawler {
 
             if (!subjectData) {
                 throw new Error("Invalid subject: " + subjectId)
-            } else {
-                parsedSubjects.push(subjectData)
             }
+
+            parsedSubjects.push(subjectData)
         }
         return parsedSubjects
     }
