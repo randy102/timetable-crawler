@@ -55,7 +55,7 @@ class Crawler {
 
             if(!page){
                 page = await browser.newPage();
-                page.goto(CRAWL_URL);
+                await page.goto(CRAWL_URL);
             }
 
             await page.waitForSelector('#ctl00_ContentPlaceHolder1_ctl00_txtloc')
