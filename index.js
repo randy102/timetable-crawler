@@ -1,6 +1,8 @@
 const express = require('express')
 const Crawler = require("./libs/Crawler");
 const app = express()
+const {subjectCache} = require('./helper/cache')
+
 const port = process.env.PORT || 3000
 
 app.get('/api/subjects', async (req, res) => {
@@ -18,6 +20,11 @@ app.get('/api/subjects', async (req, res) => {
     } catch (e) {
         return res.json({ error: e.message, data: null })
     }
+})
+
+app.get('/api/cache/clear', (req, res) =>{
+    subjectCache.flushAll()
+    return res.end('OK')
 })
 
 app.listen(port, () => {

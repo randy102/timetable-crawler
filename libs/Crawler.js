@@ -72,7 +72,7 @@ class Crawler {
             } catch (e){
                 throw new Error("Server is busy now, please try again later.")
             }
-            await page.waitForTimeout(500)
+            await page.waitForTimeout(1000)
             const subjectData = await page.evaluate(subjectParser)
             console.log("Subject data: ", JSON.stringify(subjectData))
 
