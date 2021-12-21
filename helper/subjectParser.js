@@ -26,7 +26,7 @@ function subjectParser() {
 
     for (let row of rows) {
         let excluded = row.querySelector("td:nth-child(7)").innerText;
-        if(excluded) continue
+        if (excluded) continue
 
         let group = row.querySelector("td:nth-child(3)").innerText;
         let days = Array.from(row.querySelectorAll('td:nth-child(9) td, td:nth-child(9)>div')).map(x => dayMap[x.innerText]);
@@ -40,10 +40,10 @@ function subjectParser() {
             start: starts[index],
             length: lengths[index],
             room: rooms[index],
-            week: weeks[index] && weeks[index].split("").map(c => c === '-' ? 0 : 1)
+            week: weeks[index] && weeks[index].split("").map(c => c === '-' ? 0 : 1).concat(Array(15 - weeks[index].length).fill(0))
         }));
 
-        if(sessions.some(s => s.start === 0)){
+        if (sessions.some(s => s.start === 0)) {
             continue
         }
 
