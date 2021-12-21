@@ -68,7 +68,7 @@ class Crawler {
             await page.click('#ctl00_ContentPlaceHolder1_ctl00_bntLocTKB')
 
             try {
-                await page.waitForSelector("#ctl00_ContentPlaceHolder1_ctl00_bntLocTKB", { timeout: 10000 })
+                await page.waitForSelector("#ctl00_ContentPlaceHolder1_ctl00_pnlHeader .grid-roll2", { timeout: 10000 })
             } catch (e){
                 throw new Error("Server is busy now, please try again later.")
             }
